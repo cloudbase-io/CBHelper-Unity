@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CBHelper-Unity", "CBHelper-Unity\CBHelper-Unity.csproj", "{9B37BF8B-57A9-4873-8340-F7B79541B3E8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B37BF8B-57A9-4873-8340-F7B79541B3E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B37BF8B-57A9-4873-8340-F7B79541B3E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B37BF8B-57A9-4873-8340-F7B79541B3E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B37BF8B-57A9-4873-8340-F7B79541B3E8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = CBHelper-Unity\CBHelper-Unity.csproj
+	EndGlobalSection
+EndGlobal

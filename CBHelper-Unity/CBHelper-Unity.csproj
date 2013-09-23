@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="3.5" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{9B37BF8B-57A9-4873-8340-F7B79541B3E8}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>CBHelperUnity</RootNamespace>
+    <AssemblyName>CBHelper-Unity</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>Libs\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityScript, Version=1.0.0.0, Culture=neutral">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine">
+      <HintPath>\Applications\Unity\Unity.app\Contents\Frameworks\Managed\UnityEngine.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="CBPayPal.cs" />
+    <Compile Include="CBHelper.cs" />
+    <Compile Include="DataCommands\CBDataAggregationCommand.cs" />
+    <Compile Include="DataCommands\CBDataAggregationCommandGroup.cs" />
+    <Compile Include="DataCommands\CBDataAggregationCommandProject.cs" />
+    <Compile Include="DataCommands\CBDataAggregationCommandUnwind.cs" />
+    <Compile Include="DataCommands\CBHelperSearchCondition.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <None Include="DataCommands\CBDataAggregationCommand.cs.meta" />
+    <None Include="DataCommands\CBDataAggregationCommandGroup.cs.meta" />
+    <None Include="DataCommands\CBDataAggregationCommandProject.cs.meta" />
+    <None Include="DataCommands\CBDataAggregationCommandUnwind.cs.meta" />
+    <None Include="DataCommands\CBHelperSearchCondition.cs.meta" />
+  </ItemGroup>
+</Project>
