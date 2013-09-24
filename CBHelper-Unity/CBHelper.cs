@@ -18,8 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+using Pathfinding.Serialization.JsonFx;
 
 using Cloudbase.DataCommands;
 
@@ -50,59 +49,6 @@ namespace Cloudbase {
         CBToastWithImageAndText = 4
     }
 
-    class CBJsonDictionaryConverter : CustomCreationConverter<IDictionary<string, object>>
-    {
-        public override IDictionary<string, object> Create(Type objectType)
-        {
-            return new Dictionary<string, object>();
-        }
-
-        public override bool CanConvert(Type objectType)
-        {
-            // in addition to handling IDictionary<string, object>
-            // we want to handle the deserialization of dict value
-            // which is of type object
-            return objectType == typeof(object) || base.CanConvert(objectType);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.StartObject
-                || reader.TokenType == JsonToken.Null)
-                return base.ReadJson(reader, objectType, existingValue, serializer);
-
-            // if the next token is not an object
-            // then fall back on standard deserializer (strings, numbers etc.)
-            return serializer.Deserialize(reader);
-        }
-    }
-
-    class CBJsonArrayConverter : CustomCreationConverter<IList<object>>
-    {
-        public override IList<object> Create(Type objectType)
-        {
-            return new List<object>();
-        }
-
-        public override bool CanConvert(Type objectType)
-        {
-            // in addition to handling IDictionary<string, object>
-            // we want to handle the deserialization of dict value
-            // which is of type object
-            return objectType == typeof(List<>) || base.CanConvert(objectType);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            if (reader.TokenType == JsonToken.StartArray
-                || reader.TokenType == JsonToken.Null)
-                return base.ReadJson(reader, objectType, existingValue, serializer);
-
-            // if the next token is not an object
-            // then fall back on standard deserializer (strings, numbers etc.)
-            return serializer.Deserialize(reader);
-        }
-    }
 
     /// <summary>
     /// This container class is used to send attachment to the data APIs. when inserting or updating a document with attached files
@@ -565,7 +511,7 @@ namespace Cloudbase {
         /// <param name="whenDone">The delegate to be called once the request is completed</param>
         public void UpdateDocument(string collection, CBHelperSearchCondition conditions, object document, Func<CBResponseInfo, bool> whenDone)
         {
-            this.UpdateDocument(collection, conditions, document, null, whenDone);
+            this.UpdateDocument(collection, conditions, document, null, false, whenDone);
         }
         /// <summary>
         /// Updates one or many documents in a cloudbase collection with the given document/list of documents.
@@ -576,7 +522,7 @@ namespace Cloudbase {
         /// <param name="document">The document to be updated. Documents matching the search conditions will be replaced with this value</param>
         /// <param name="fileAttachments">A List of file attachments for the new documents</param>
         /// <param name="whenDone">The delegate to be called once the request is completed</param>
-        public void UpdateDocument(string collection, CBHelperSearchCondition conditions, object document, IList<CBHelperAttachment> fileAttachments, Func<CBResponseInfo, bool> whenDone)
+        public void UpdateDocument(string collection, CBHelperSearchCondition conditions, object document, IList<CBHelperAttachment> fileAttachments, bool isUpsert, Func<CBResponseInfo, bool> whenDone)
         {
             string url = this.getUrl() + this.appCode + "/" + collection + "/update";
 
@@ -585,21 +531,23 @@ namespace Cloudbase {
             {
                 foreach (object curDoc in (List<object>)document)
                 {
-                    string jsonObj = JsonConvert.SerializeObject(curDoc);
-                    IDictionary<string, object> parsedObject = JsonConvert.DeserializeObject<IDictionary<string, object>>(
-                                jsonObj, new JsonConverter[] { new CBJsonDictionaryConverter(), new CBJsonArrayConverter() });
-                    parsedObject.Add("cb_search_key", conditions);
+                    string jsonObj = CBHelper.toJson(curDoc);
+                    Dictionary<string, object> parsedObject = JsonReader.Deserialize<Dictionary<string, object>>(jsonObj);
+                    parsedObject.Add("cb_search_key", CBHelperSearchCondition.SerializeConditions(conditions));
+					if ( isUpsert ) {
+						parsedObject.Add("cb_upsert", 1);
+					}
                     finalDocument.Add(parsedObject);
                 }
             }
             else
             {
-                string jsonObj = JsonConvert.SerializeObject(document);
-                IDictionary<string, object> parsedObject = JsonConvert.DeserializeObject<IDictionary<string, object>>(
-                            jsonObj, new JsonConverter[] { new CBJsonDictionaryConverter(), new CBJsonArrayConverter() });
-                parsedObject.Add("cb_search_key", conditions);
+                string jsonObj = CBHelper.toJson(document);
+				Dictionary<string, object> parsedObject = JsonReader.Deserialize<Dictionary<string, object>>(jsonObj);
+                parsedObject.Add("cb_search_key", CBHelperSearchCondition.SerializeConditions(conditions));
+				parsedObject.Add("cb_upsert", 1);
                     
-                finalDocument.Add(document);
+                finalDocument.Add(parsedObject);
             }
 
             this.sendRequest("data", url, finalDocument, null, fileAttachments, whenDone);
@@ -835,7 +783,11 @@ namespace Cloudbase {
             form.AddField("app_pwd", this.password);
             form.AddField("device_uniq", this.DeviceUniqueIdentifier);
 			
-            form.AddField("post_data", (postData != null?JsonConvert.SerializeObject(postData):""));
+            form.AddField("post_data", (postData != null?CBHelper.toJson(postData):""));
+			
+			if ( this.DebugMode ) {
+				Debug.Log("Sending post data: " + CBHelper.toJson(postData));
+			}
 			
             if (additionalPostParameters != null)
             {
@@ -858,7 +810,7 @@ namespace Cloudbase {
                 location.Add("lng", Convert.ToString(this.CurrentLocation.longitude));
                 location.Add("alt", Convert.ToString(this.CurrentLocation.altitude));
 
-                form.AddField("location_data", JsonConvert.SerializeObject(location).ToString());
+                form.AddField("location_data", CBHelper.toJson(location));
             }
 			
 			if (fileAttachments != null)
@@ -879,6 +831,18 @@ namespace Cloudbase {
         {
             return (this.isHttps ? "https://" : "http://") + this.apiUrl + "/";
         }
+		
+		public static string toJson(object originalObject) {
+			JsonWriterSettings settings = new JsonWriterSettings();
+			System.Text.StringBuilder output = new System.Text.StringBuilder();
+		
+			JsonWriter writer = new JsonWriter (output,settings);
+			writer.Write (originalObject);
+		
+			// this turns a C# object into a JSON string.
+			string json = output.ToString();
+			return json;
+		}
 			
 	}
 	
@@ -930,9 +894,10 @@ namespace Cloudbase {
 
                     if (this.debugMode)
                     	Debug.Log("Response received: " + responseString);
-
-					IDictionary<string, object> parsedObject = JsonConvert.DeserializeObject<IDictionary<string, object>>(
-						responseString, new JsonConverter[] { new CBJsonDictionaryConverter(), new CBJsonArrayConverter() });
+					
+					Dictionary<string, object> parsedObject = JsonReader.Deserialize<Dictionary<string, object>>(responseString);
+					//IDictionary<string, object> parsedObject = JsonConvert.DeserializeObject<IDictionary<string, object>>(
+					//	responseString, new JsonConverter[] { new CBJsonDictionaryConverter(), new CBJsonArrayConverter() });
                             
 					if (whenDone != null)
 					{
@@ -949,7 +914,7 @@ namespace Cloudbase {
 						resp.Status = (Convert.ToString(((Dictionary<string, object>)parsedObject[function])["status"]).Equals("OK"));
 						resp.CBFunction = function;
 						resp.Data = ((Dictionary<string, object>)parsedObject[function])["message"];
-						resp.OutputString = JsonConvert.SerializeObject(((Dictionary<string, object>)parsedObject[function])["message"]);
+						resp.OutputString = CBHelper.toJson(((Dictionary<string, object>)parsedObject[function])["message"]);
 						whenDone(resp);
 					}
 				}
