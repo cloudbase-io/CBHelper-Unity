@@ -166,6 +166,17 @@ namespace Cloudbase {
             set { _deviceUniqueIdentifier = value; }
         }
         private string password;
+		
+		private string _countryCode = "us";
+		/// <summary>
+		/// The CountryCode should be populated with the 2 letter ISO code for the current country of the device. This will be used
+		/// for the analytics
+		/// </summary>
+		public string CountryCode {
+			get { return _countryCode; }
+			set { _countryCode = value; }
+		}
+		
         private string _authUsername;
         /// <summary>
         /// The username of the client application. If this field is populated it will be sent with each request to the cloudbase.io APIs
@@ -262,8 +273,7 @@ namespace Cloudbase {
         /// to generate this: CBHelper.MD5Core.GetHashString("application password");</param>
         public void SetPassword(string apppwd) {
             this.password = apppwd.ToLower();
-			Debug.Log ("Password set");
-            this.RegisterDevice();
+			this.RegisterDevice();
         }
 
         private void RegisterDevice()
@@ -275,8 +285,7 @@ namespace Cloudbase {
             values.Add("device_model", SystemInfo.deviceModel);
             
 			values.Add("language", Application.systemLanguage.ToString());
-            values.Add("country", "us");
-			
+			values.Add("country", this.CountryCode);
 			//this.sendRequest("register-device", url, values, null, null, null, null);
             this.sendRequest("register-device", url, values, null, null, delegate(CBResponseInfo resp) {
                 // TODO: Parse response and get SessionID
@@ -895,26 +904,33 @@ namespace Cloudbase {
                     if (this.debugMode)
                     	Debug.Log("Response received: " + responseString);
 					
-					Dictionary<string, object> parsedObject = JsonReader.Deserialize<Dictionary<string, object>>(responseString);
+					Dictionary<string, Dictionary<string, object>> parsedObject = JsonReader.Deserialize<Dictionary<string, Dictionary<string, object>>>(responseString);
 					//IDictionary<string, object> parsedObject = JsonConvert.DeserializeObject<IDictionary<string, object>>(
 					//	responseString, new JsonConverter[] { new CBJsonDictionaryConverter(), new CBJsonArrayConverter() });
-                            
+                    
 					if (whenDone != null)
 					{
-						string statusHeader = w.responseHeaders["STATUS"];
-						string[] statusStrings = statusHeader.Split(' ');
-						
 						CBResponseInfo resp = new CBResponseInfo();
-						if ( statusStrings.Length >= 2 ) {
-							int output = 0;
-							if ( int.TryParse(statusStrings[1], out output) ) {
-								resp.HttpStatus = output;
+						if ( w.responseHeaders.ContainsKey("STATUS") ) {
+							string statusHeader = w.responseHeaders["STATUS"];
+							string[] statusStrings = statusHeader.Split(' ');
+							
+							if ( statusStrings.Length >= 2 ) {
+								int output = 0;
+								if ( int.TryParse(statusStrings[1], out output) ) {
+									resp.HttpStatus = output;
+								}
 							}
+						} else {
+							resp.HttpStatus = 200;
 						}
-						resp.Status = (Convert.ToString(((Dictionary<string, object>)parsedObject[function])["status"]).Equals("OK"));
+						
+						resp.Status = (Convert.ToString(parsedObject[function]["status"]).Equals("OK"));
+						resp.ErrorMessage = Convert.ToString(parsedObject[function]["error"]);
 						resp.CBFunction = function;
-						resp.Data = ((Dictionary<string, object>)parsedObject[function])["message"];
-						resp.OutputString = CBHelper.toJson(((Dictionary<string, object>)parsedObject[function])["message"]);
+						resp.Data = parsedObject[function]["message"];
+						resp.OutputString = CBHelper.toJson(parsedObject[function]["message"]);
+							//Debug.Log ("MESSAGE: " + resp.Data);
 						whenDone(resp);
 					}
 				}

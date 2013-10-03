@@ -21,7 +21,6 @@ To start using the library register at https://manage.cloudbase.io/register and 
 
 This repository contains a MonoDevelop solution to build the CBHelper.dll client library:
 
-The cloudbase.io helper class for Windows Phone utilizes the Newtonsoft.Json package. While this package
-is included in the solution you can get new updates and fixes using NuGet.
+The cloudbase.io helper class for Unity 3d utilizes a customised version of the JsonFX package by Aron Granberg https://bitbucket.org/TowerOfBricks/jsonfx-for-unity3d.
 
 The library requires a reference to the UnityEngine.dll to build. This is located under the /Frameworks/Managed directory of your Unity installation.
